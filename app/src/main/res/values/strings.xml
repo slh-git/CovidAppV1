@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">CovidAppV1</string>
+    <string name="MainTitle">COVID Quarantine App</string>
+    <string name="IntroText">This app requires the user to walk the parameters (four corners) of the location that they are doing quarantine to set the boundaries and then alerts them if they exit the area.</string>
+</resources>
