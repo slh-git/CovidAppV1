@@ -4,6 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_centerInParent="true"
+    android:layout_centerHorizontal="true"
+    android:layout_centerVertical="true"
+    android:foregroundGravity="center_vertical|center|center_horizontal"
     tools:context=".MainActivity">
 
     <androidx.appcompat.widget.Toolbar
@@ -18,14 +22,15 @@
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.037" />
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/textView"
-        android:layout_width="301dp"
-        android:layout_height="36dp"
+        android:layout_width="303dp"
+        android:layout_height="37dp"
         android:autoText="false"
         android:fontFamily="serif-monospace"
+        android:foregroundGravity="center_horizontal"
         android:text="@string/MainTitle"
         android:textColor="#FDFDFD"
         android:textSize="24sp"
@@ -36,7 +41,7 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintStart_toStartOf="@+id/toolbar2"
         app:layout_constraintTop_toTopOf="@+id/toolbar2"
-        app:layout_constraintVertical_bias="0.55" />
+        app:layout_constraintVertical_bias="0.842" />
 
     <TextView
         android:id="@+id/textView2"

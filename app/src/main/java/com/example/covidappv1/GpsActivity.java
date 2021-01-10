@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -40,13 +41,15 @@ import java.util.ArrayList;
 
 public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallback {
     private static final String OUT_OF_POLYGON = "out_of_polygon_id";
-    Button btnTopLeft, btnTopRight, btnBotLeft, btnBotRight;
-     GoogleMap map;
+    Button btnTopLeft, btnTopRight, btnBotLeft, btnBotRight, btnReset;
+    GoogleMap map;
+    TextView txtviewInstruction;
     private double currLat, currLong;
-     LocationCallback locationCallBack;
-     LocationRequest locationRequest;
+    LocationCallback locationCallBack;
+    LocationRequest locationRequest;
     private Marker currentMarker;
     private ArrayList<LatLng> polyCoord;
+    private ArrayList<Marker> polyMarker;
     private boolean havePolygon = false;
     private NotificationManagerCompat notificationManagerCompat;
     SupportMapFragment supportMapFragment;
@@ -57,8 +60,8 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
     //constants
     private static final int PERMISSION_FINE_LOCATION = 66;
     //How fast the gps updates location (seconds)
-    public static final int DEFAULT_UPDATE_INTERVAL = 1;
-    public static final int FASTEST_UPDATE_INTERVAL = 1;
+    public static final int DEFAULT_UPDATE_INTERVAL = 5;
+    public static final int FASTEST_UPDATE_INTERVAL = 3;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,7 +72,9 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
         btnTopRight = findViewById(R.id.btnTopRight);
         btnBotLeft = findViewById(R.id.btnBotLeft);
         btnBotRight = findViewById(R.id.btnBotRight);
-        polyCoord= new ArrayList<>();
+        btnReset = findViewById(R.id.btnReset);
+        txtviewInstruction = findViewById(R.id.txtviewInstructions);
+        polyCoord = new ArrayList<>();
 
         supportMapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
@@ -105,6 +110,7 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
             supportMapFragment.onCreate(savedInstanceState);
             supportMapFragment.getMapAsync(this);
             startLocationUpdate();
+
         }
 
 
@@ -114,10 +120,13 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
                 .setSmallIcon(R.drawable.notification_icon)
                 .setContentTitle("Fencing Alert")
                 .setContentText("This is a notification that you have exited the parameter you've set.")
+                .setStyle(new NotificationCompat.BigTextStyle().bigText("This is a notification that you have exited the parameter you've set."))
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
 
         //setting the btns and their function
+
+        addInstruction(" - Walk towards the top left corner of the property, once the cyan coloured marker reached the location press the button to create a marker");
         btnTopRight.setEnabled(false);
         btnBotRight.setEnabled(false);
         btnBotLeft.setEnabled(false);
@@ -125,6 +134,7 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
         btnTopLeft.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
+                addInstruction(" - Walk towards the top right corner of the property, once the cyan coloured marker reached the location press the button to create a marker");
                 //Gotta reset if theres anything in the arraylist already
                 if (polyCoord.size() >= 4){
                     polyCoord= new ArrayList<>();
@@ -143,6 +153,8 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
         btnTopRight.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                addInstruction(" - Walk towards the bottom right corner of the property, once the cyan coloured marker reached the location press the button to create a marker");
+
                 LatLng coord = new LatLng(currLat, currLong);
                 Marker newMarker = map.addMarker(new MarkerOptions().
                         position(coord).
@@ -156,6 +168,8 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
         btnBotRight.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                addInstruction(" - Walk towards the bottom left corner of the property, once the cyan coloured marker reached the location press the button to create a marker.");
+
                 LatLng coord = new LatLng(currLat, currLong);
                 Marker newMarker = map.addMarker(new MarkerOptions().
                         position(coord).
@@ -169,6 +183,7 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
         btnBotLeft.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                addInstruction(" - The new created polygon is the \"fence\" that you should stay in during the quarantine period, if you forget, the notification will remind you that you have left the area.");
                 LatLng coord = new LatLng(currLat, currLong);
                 Marker newMarker = map.addMarker(new MarkerOptions().
                         position(coord).
@@ -176,11 +191,22 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
                 polyCoord.add(coord);
                 map.moveCamera(CameraUpdateFactory.newLatLngZoom(coord, 20 ));
                 btnBotLeft.setEnabled(false);
+                btnReset.setEnabled(true);
 
                 //make the polygon
                 polygon1 = map.addPolygon(new PolygonOptions()
                         .clickable(true).addAll(polyCoord));
                 havePolygon = true;
+            }
+        });
+        btnReset.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                btnTopLeft.setEnabled(true);
+                btnBotLeft.setEnabled(false);
+                havePolygon = false;
+                map.clear();
+                addInstruction(" - Please restart from the top left corner of the location");
             }
         });
     }
@@ -229,8 +255,9 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
         if (currentMarker != null){
             currentMarker.remove();
         }
-        currentMarker= map.addMarker(new MarkerOptions().position(coord).title("new Location").
+        currentMarker= map.addMarker(new MarkerOptions().position(coord).title("Current Location").
                 icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN)));
+
         //have not implemented notification yet
         if (havePolygon){
             boolean insidePolygon = insidePolygon(coord, polyCoord);
@@ -266,7 +293,7 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
             public void onSuccess(Location location) {
                 //start tracking location
                 LatLng coord = new LatLng(currLat, currLong);
-                map.moveCamera(CameraUpdateFactory.newLatLngZoom(coord, 8));
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(coord, 20 ));
             }
         });
     }
@@ -274,7 +301,12 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
     //checks if the location is inside the polygon
     private boolean insidePolygon(LatLng currCoord, ArrayList<LatLng> polyCoord){
         boolean insidePolygon  = PolyUtil.containsLocation(currCoord, polyCoord, true);
-        Toast.makeText(getApplicationContext(),String.valueOf(insidePolygon),Toast. LENGTH_SHORT).show();
+        if (insidePolygon){
+            Toast.makeText(getApplicationContext(),"You are inside the parameter",Toast. LENGTH_SHORT).show();
+        }else{
+            Toast.makeText(getApplicationContext(),"You have stepped outside the parameter",Toast. LENGTH_SHORT).show();
+
+        }
         return insidePolygon;
     }
     // For notifs
@@ -291,4 +323,10 @@ public class GpsActivity extends AppCompatActivity   implements OnMapReadyCallba
             notificationManager.createNotificationChannel(channel);
         }
     }
+
+    private void addInstruction(String stringToAdd){
+        String newString = " - The cyan marker indicates your current location. \n" + stringToAdd;
+        txtviewInstruction.setText(newString);
+    }
+
 }
